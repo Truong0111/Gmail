@@ -10,26 +10,68 @@ import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.gmail.databinding.ActivityMainBinding
 import com.example.gmail.databinding.GmailItemBinding
+import com.example.gmail.databinding.ActivityMainRecyclerviewBinding
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var main: ActivityMainBinding
+    private lateinit var recyclerMain: ActivityMainRecyclerviewBinding
 
-    data class Email(val sender: String, val subject: String, val timestamp: String)
+    data class Email(val sender: String, val subject: String, val timestamp: String, val color: Int)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         main = ActivityMainBinding.inflate(layoutInflater)
-        val view = main.root
+        recyclerMain = ActivityMainRecyclerviewBinding.inflate(layoutInflater)
+
+//        val view = main.root
+        val view = recyclerMain.root
         setContentView(view)
 
         val data = generateRandomEmailDataList(25)
 
-        val adapter = EmailAdapter(this, data)
-        val listView = main.listView
-        listView.adapter = adapter
+//        val adapter = EmailAdapter(this, data)
+//        val listView = main.listView
+//        listView.adapter = adapter
+
+        val adapter = EmailAdapterRecyclerView(this, data)
+        val recyclerView = recyclerMain.recyclerView
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = adapter
+    }
+
+    inner class EmailAdapterRecyclerView(private val context: AppCompatActivity, private val emails: List<Email>) :
+        RecyclerView.Adapter<EmailAdapterRecyclerView.EmailViewHolder>() {
+
+        inner class EmailViewHolder(val binding: GmailItemBinding) :
+            RecyclerView.ViewHolder(binding.root)
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EmailViewHolder {
+            val binding =
+                GmailItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+            return EmailViewHolder(binding)
+        }
+
+        @RequiresApi(Build.VERSION_CODES.M)
+        override fun onBindViewHolder(holder: EmailViewHolder, position: Int) {
+            val email = emails[position]
+            with(holder.binding) {
+                sender.text = email.sender
+                firstSender.text = email.sender.take(1)
+                timestamp.text = email.timestamp
+                content.text = email.subject
+                val randomColor = ContextCompat.getColor(context, generateRandomColor())
+                icon.foregroundTintList = ColorStateList.valueOf(randomColor)
+            }
+        }
+
+        override fun getItemCount(): Int {
+            return emails.size
+        }
     }
 
     inner class EmailAdapter(context: AppCompatActivity, objects: List<Email>) :
@@ -53,7 +95,6 @@ class MainActivity : AppCompatActivity() {
             binding.timestamp.text = email?.timestamp
             binding.content.text = email?.subject
 
-
             val randomColor = ContextCompat.getColor(context, generateRandomColor())
             val icon = binding.icon
             icon.foregroundTintList = ColorStateList.valueOf(randomColor)
@@ -74,7 +115,8 @@ class MainActivity : AppCompatActivity() {
 
         val timestamp = SimpleDateFormat("hh:mm a", Locale.US).format(calendar.time)
 
-        return Email(sender, subject, timestamp)
+        val randomColor = generateRandomColor()
+        return Email(sender, subject, timestamp, randomColor)
     }
 
     private fun generateRandomEmailDataList(count: Int): List<Email> {
@@ -85,7 +127,7 @@ class MainActivity : AppCompatActivity() {
         return emailList
     }
 
-    private fun generateRandomSubject(subjectLength : Int): String {
+    private fun generateRandomSubject(subjectLength: Int): String {
         val letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
         val random = Random()
 
